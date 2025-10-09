@@ -1,7 +1,7 @@
 
 locals {
 common_tags = merge({
-    Application = "corrosion"
+    Application = "winda-central-infra"
     Environment = var.environment
     repository  = var.repository
     commit_hash = substr(var.commit_hash, 0, 5)

@@ -72,10 +72,12 @@ jobs:
     - name: Git Commit
       id: git-commit
       run: |
-        echo "COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-        echo "REPOSITORY=$(basename `git rev-parse --show-toplevel`)" >> $GITHUB_ENV
-        echo "Commit hash: $COMMIT_HASH"
-        echo "Repository: $REPOSITORY"
+        COMMIT_HASH=$(git rev-parse --short HEAD)
+        REPOSITORY=$(basename $(git rev-parse --show-toplevel))
+        echo "COMMIT_HASH=${COMMIT_HASH}" >> $GITHUB_ENV
+        echo "REPOSITORY=${REPOSITORY}" >> $GITHUB_ENV
+        echo "Commit hash: ${COMMIT_HASH}"
+        echo "Repository: ${REPOSITORY}"
         echo "TF_VAR_REPOSITORY=${REPOSITORY}" >> $GITHUB_ENV
         echo "TF_VAR_COMMIT_HASH=${COMMIT_HASH}" >> $GITHUB_ENV
 
