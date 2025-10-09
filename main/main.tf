@@ -73,7 +73,7 @@ resource "aws_nat_gateway" "nat" {
 # ECS Cluster
 # ============================================================
 resource "aws_ecs_cluster" "this" {
-  name = "${local.name_prefix}-cluster"
+  name = "${local.name_prefix}-ecs-cluster"
 
   setting {
     name  = "containerInsights"
