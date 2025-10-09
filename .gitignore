@@ -1,0 +1,27 @@
+# Terraform local state & transient files
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform/
+.terraform.lock.hcl
+
+# Variable files with secrets (uncomment if you keep sensitive vars)
+# *.auto.tfvars
+# terraform.tfvars
+
+# IDE/editor noise
+.idea/
+.vscode/
+*.iml
+
+# OS files
+.DS_Store
+
+# Logs / temp
+*.tmp
+*.bak

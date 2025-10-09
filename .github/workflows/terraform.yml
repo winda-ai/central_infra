@@ -1,0 +1,111 @@
+name: Deploy to AWS
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+        region:
+            description: "AWS region to deploy to"
+            required: true
+            default: us-east-1
+            type: choice
+            options:
+            - us-east-1
+            - us-west-2
+        environment:
+            description: "Target environment (matches directory under workspace/, e.g. dev, prod)"
+            required: true
+            default: dev
+            type: choice
+            options:
+            - dev
+        action:
+            description: "Terraform action to perform"
+            required: true
+            default: plan
+            type: choice
+            options:
+            - plan
+            - apply
+            - destroy
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write  # For PR comments
+
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Configuration precedence (highest to lowest): workflow_dispatch inputs > repository/org variables > defaults
+    # Define repository/org variables under: Settings > Variables > Actions (e.g., TF_REGION, TF_ENV, TF_ACTION)
+    env:
+      TF_REGION: ${{ github.event_name == 'workflow_dispatch' && inputs.region || 'us-east-1' }}
+      TF_ENVIRONMENT: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'dev' }}
+      TF_ACTION: ${{ github.event_name == 'workflow_dispatch' && inputs.action || 'plan' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+        role-session-name: GitHubActions
+        aws-region: ${{ env.TF_REGION }}
+
+    - name: Verify AWS identity
+      run: |
+        aws sts get-caller-identity
+        echo "AWS CLI configured successfully"
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.8.5
+
+    - name: Git Commit
+      id: git-commit
+      run: |
+        echo "COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        echo "REPOSITORY=$(basename `git rev-parse --show-toplevel`)" >> $GITHUB_ENV
+        echo "Commit hash: $COMMIT_HASH"
+        echo "Repository: $REPOSITORY"
+        echo "TF_VAR_REPOSITORY=${REPOSITORY}" >> $GITHUB_ENV
+        echo "TF_VAR_COMMIT_HASH=${COMMIT_HASH}" >> $GITHUB_ENV
+
+    - name: Init (explicit)
+      run: make init ENV=${{ env.TF_ENVIRONMENT }} REGION=${{ env.TF_REGION }}
+
+    - name: Validate
+      run: make validate ENV=${{ env.TF_ENVIRONMENT }} REGION=${{ env.TF_REGION }}
+
+    - name: Plan (human readable)
+      if: ${{ env.TF_ACTION == 'plan' }}
+      run: make plan ENV=${{ env.TF_ENVIRONMENT }} REGION=${{ env.TF_REGION }}
+
+    - name: Apply
+      if: ${{ env.TF_ACTION == 'apply' }}
+      run: make apply ENV=${{ env.TF_ENVIRONMENT }} REGION=${{ env.TF_REGION }}
+
+    - name: Destroy
+      if: ${{ env.TF_ACTION == 'destroy' }}
+      run: make destroy ENV=${{ env.TF_ENVIRONMENT }} REGION=${{ env.TF_REGION }}
+
+    - name: Show Outputs (plan/apply only)
+      if: ${{ env.TF_ACTION != 'destroy' }}
+      run: make outputs ENV=${{ env.TF_ENVIRONMENT }} | tee outputs.txt
+
+    - name: Post Run Summary
+      if: always()
+      run: |
+        echo "Action: ${{ env.TF_ACTION }}" >> $GITHUB_STEP_SUMMARY
+        echo "Environment: ${{ env.TF_ENVIRONMENT }}" >> $GITHUB_STEP_SUMMARY
+        echo "Region: ${{ env.TF_REGION }}" >> $GITHUB_STEP_SUMMARY
+        if [ -f src/tfplan ]; then echo "Plan artifact: src/tfplan" >> $GITHUB_STEP_SUMMARY; fi
+
