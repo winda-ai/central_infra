@@ -78,8 +78,8 @@ jobs:
         echo "REPOSITORY=${REPOSITORY}" >> $GITHUB_ENV
         echo "Commit hash: ${COMMIT_HASH}"
         echo "Repository: ${REPOSITORY}"
-        echo "TF_VAR_REPOSITORY=${REPOSITORY}" >> $GITHUB_ENV
-        echo "TF_VAR_COMMIT_HASH=${COMMIT_HASH}" >> $GITHUB_ENV
+        echo "TF_VAR_repository=${REPOSITORY}" >> $GITHUB_ENV
+        echo "TF_VAR_commit_hash=${COMMIT_HASH}" >> $GITHUB_ENV
 
     - name: Init (explicit)
       run: make init ENV=${{ env.TF_ENVIRONMENT }} REGION=${{ env.TF_REGION }}
