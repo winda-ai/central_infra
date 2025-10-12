@@ -52,3 +52,9 @@ variable "private_subnet_cidrs" {
   default     = ["10.20.11.0/24", "10.20.12.0/24"]
 }
 
+variable "route53_zone_name" {
+  description = "The Route53 hosted zone name (must end with a dot)"
+  type        = string
+  default     = "winda.ai"
+}
+
