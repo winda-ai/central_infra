@@ -1,17 +1,20 @@
 
 locals {
-common_tags = merge({
+  # Sanitize commit hash - only use if it's not empty and is valid
+  safe_commit_hash = var.commit_hash != "" && var.commit_hash != null ? substr(replace(var.commit_hash, "/[^a-zA-Z0-9-]/", ""), 0, 7) : "local"
+
+  common_tags = merge({
     Application = "winda-central-infra"
     Environment = var.environment
-    repository  = var.repository
-    commit_hash = substr(var.commit_hash, 0, 5)
+    Repository  = var.repository
+    CommitHash  = local.safe_commit_hash
   }, var.tags)
   name_prefix = "${var.name_prefix}-${var.environment}-${var.region}"
-  
+
   # Regional FQDN for multi-region deployment
   # Examples: useast1.dev.winda.ai, uswest2.dev.winda.ai, euwest1.dev.winda.ai
   regional_fqdn = "${replace(var.region, "-", "")}.${var.environment}.winda.ai"
-  
+
   # Global FQDN (for Route53 geolocation/latency routing)
   # Example: dev.winda.ai (routes to nearest region)
   global_fqdn = "${var.environment}.winda.ai"
@@ -165,7 +168,7 @@ resource "aws_ecs_cluster_capacity_providers" "this" {
 resource "aws_acm_certificate" "this" {
   domain_name       = local.regional_fqdn
   validation_method = "DNS"
-  
+
   # Include global domain and wildcard subdomain as Subject Alternative Names
   # This supports both:
   # - dev.winda.ai (global routing)
@@ -178,13 +181,7 @@ resource "aws_acm_certificate" "this" {
   lifecycle {
     create_before_destroy = true
   }
-  
-  tags = merge(local.common_tags, { 
-    Name = "${local.name_prefix}-certificate"
-    Regional = local.regional_fqdn
-    Global = local.global_fqdn
-    Wildcard = "*.${local.global_fqdn}"
-  })
+  tags = merge(local.common_tags, { Name = "${local.name_prefix}-acm-cert" })
 }
 
 resource "aws_acm_certificate_validation" "this" {
@@ -224,28 +221,28 @@ resource "aws_security_group" "alb_sg" {
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    description      = "Allow HTTP from anywhere"
-    from_port        = 80
-    to_port          = 80
-    protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
+    description = "Allow HTTP from anywhere"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
-    description      = "Allow HTTPS from anywhere"
-    from_port        = 443
-    to_port          = 443
-    protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
+    description = "Allow HTTPS from anywhere"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
-    description      = "Allow all outbound traffic"
-    from_port        = 0
-    to_port          = 0
-    protocol         = "-1"
-    cidr_blocks      = ["0.0.0.0/0"]  
-}
+    description = "Allow all outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
   tags = merge(local.common_tags, { Name = "${local.name_prefix}-alb-sg" })
 }
 
@@ -256,11 +253,11 @@ resource "aws_lb" "this" {
   security_groups    = [aws_security_group.alb_sg.id]
   subnets            = values(aws_subnet.public)[*].id
   idle_timeout       = 60
-  
-  enable_deletion_protection = false
-  enable_http2              = true
+
+  enable_deletion_protection       = false
+  enable_http2                     = true
   enable_cross_zone_load_balancing = true
-  
+
   tags = merge(local.common_tags, { Name = "${local.name_prefix}-alb" })
 }
 
@@ -271,9 +268,9 @@ resource "aws_lb_target_group" "default" {
   port     = 80
   protocol = "HTTP"
   vpc_id   = aws_vpc.main.id
-  
+
   target_type = "ip"
-  
+
   health_check {
     enabled             = true
     healthy_threshold   = 2
@@ -287,7 +284,7 @@ resource "aws_lb_target_group" "default" {
   }
 
   deregistration_delay = 30
-  
+
   tags = merge(local.common_tags, { Name = "${local.name_prefix}-default-tg" })
 }
 
@@ -330,7 +327,7 @@ resource "aws_lb_listener" "https" {
   }
 
   depends_on = [aws_acm_certificate_validation.this]
-  
+
   tags = merge(local.common_tags, { Name = "${local.name_prefix}-https-listener" })
 }
 
@@ -354,7 +351,7 @@ resource "aws_route53_record" "alb_global" {
   zone_id = data.aws_route53_zone.selected.zone_id
   name    = local.global_fqdn
   type    = "A"
-  
+
   # Latency-based routing to nearest region
   set_identifier = var.region
   latency_routing_policy {
