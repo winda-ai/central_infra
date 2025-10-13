@@ -43,6 +43,7 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    name: ${{ github.event_name == 'workflow_dispatch' && format('{0} → {1}/{2}', inputs.action, inputs.environment, inputs.region) || format('plan → dev/us-east-1') }}
     # Configuration precedence (highest to lowest): workflow_dispatch inputs > repository/org variables > defaults
     # Define repository/org variables under: Settings > Variables > Actions (e.g., TF_REGION, TF_ENV, TF_ACTION)
     env:
