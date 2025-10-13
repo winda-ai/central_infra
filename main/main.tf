@@ -18,8 +18,8 @@ locals {
   # Global FQDN (for Route53 geolocation/latency routing)
   # Example: dev.winda.ai (routes to nearest region)
   global_fqdn = "${var.environment}.winda.ai"
+  subdomains  = ["corrosion-engineer", "corrosion-buddy", "corrosion-prediction"]
 }
-
 ///////////////////////////////////////////////
 // Data Sources
 ///////////////////////////////////////////////
@@ -172,13 +172,16 @@ resource "aws_acm_certificate" "this" {
   # Include global domain and wildcard subdomains as Subject Alternative Names
   # This supports:
   # - dev.winda.ai (global routing)
-  # - *.dev.winda.ai (single-level: corrosion-engineer.dev.winda.ai)
-  # - *.*.dev.winda.ai (two-level: api.corrosion-engineer.dev.winda.ai)
-  subject_alternative_names = [
-    local.global_fqdn,
-    "*.${local.global_fqdn}",
-    "*.*.${local.global_fqdn}"
-  ]
+  # - *.dev.winda.ai (single-level subdomains)
+  # - *.corrosion-engineer.dev.winda.ai (two-level subdomains for each service)
+  # - etc.
+  subject_alternative_names = concat(
+    [
+      local.global_fqdn,
+      "*.${local.global_fqdn}"
+    ],
+    [for subdomain in local.subdomains : "*.${subdomain}.${local.global_fqdn}"]
+  )
 
   lifecycle {
     create_before_destroy = true

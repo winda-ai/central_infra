@@ -57,4 +57,3 @@ variable "route53_zone_name" {
   type        = string
   default     = "winda.ai"
 }
-
