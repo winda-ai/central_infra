@@ -169,13 +169,15 @@ resource "aws_acm_certificate" "this" {
   domain_name       = local.regional_fqdn
   validation_method = "DNS"
 
-  # Include global domain and wildcard subdomain as Subject Alternative Names
-  # This supports both:
+  # Include global domain and wildcard subdomains as Subject Alternative Names
+  # This supports:
   # - dev.winda.ai (global routing)
-  # - *.dev.winda.ai (service subdomains like corrosion-engineer.dev.winda.ai)
+  # - *.dev.winda.ai (single-level: corrosion-engineer.dev.winda.ai)
+  # - *.*.dev.winda.ai (two-level: api.corrosion-engineer.dev.winda.ai)
   subject_alternative_names = [
     local.global_fqdn,
-    "*.${local.global_fqdn}"
+    "*.${local.global_fqdn}",
+    "*.*.${local.global_fqdn}"
   ]
 
   lifecycle {
