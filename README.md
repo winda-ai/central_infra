@@ -47,24 +47,6 @@ User anywhere → dev.winda.ai
 
 ## Quick Start
 
-### 1. Deploy Central Infrastructure
-
-```bash
-# Deploy to first region
-make init ENV=dev REGION=us-east-1
-make apply ENV=dev REGION=us-east-1
-
-# Deploy to additional regions (optional)
-make apply ENV=dev REGION=us-west-2
-make apply ENV=dev REGION=eu-west-1
-```
-
-### 2. Get Outputs (for service teams)
-
-```bash
-make outputs ENV=dev
-```
-
 Key outputs your services need:
 - `ecs_cluster_id` - Where to deploy containers
 - `https_listener_arn` - Where to add routing rules
