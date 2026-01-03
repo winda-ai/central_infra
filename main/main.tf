@@ -145,16 +145,10 @@ resource "aws_ecs_cluster_capacity_providers" "this" {
   cluster_name = aws_ecs_cluster.this.name
 
   # Use AWS-managed capacity providers (no need to create them)
-  capacity_providers = ["FARGATE", "FARGATE_SPOT"]
+  capacity_providers = ["FARGATE_SPOT"]
 
   default_capacity_provider_strategy {
     capacity_provider = "FARGATE_SPOT"
-    weight            = 100
-    base              = 0
-  }
-
-  default_capacity_provider_strategy {
-    capacity_provider = "FARGATE"
     weight            = 100
     base              = 0
   }
