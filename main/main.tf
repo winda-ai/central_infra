@@ -18,7 +18,7 @@ locals {
   # Global FQDN (for Route53 geolocation/latency routing)
   # Example: dev.winda.ai (routes to nearest region)
   global_fqdn = "${var.environment}.winda.ai"
-  subdomains  = ["demo", "corrosion-engineer", "corrosion-buddy", "corrosion-prediction","main"]
+  subdomains  = ["msr", "demo", "corrosion-engineer", "corrosion-buddy", "corrosion-prediction","main"]
 }
 ///////////////////////////////////////////////
 // Data Sources
